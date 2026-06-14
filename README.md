@@ -1,5 +1,3 @@
-<img width="754" height="507" alt="image" src="https://github.com/user-attachments/assets/4e012ae3-5435-4512-91e4-746357c4bca8" /># Student Result Management System
-
 ## Overview
 The Student Result Management System is a web-based application developed using Java, Servlets, JSP, JDBC, MySQL, and Apache Tomcat. The system helps manage student records, subjects, marks, and result generation through a centralized platform.
 
