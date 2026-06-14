@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SRMS | Results</title><link rel="stylesheet" href="../css/style.css"></head>
+<body>
+<div class="app-layout">
+    <nav class="sidebar" id="sidebar"><div class="sidebar-header"><div class="logo-icon">🎓</div><div class="logo-text">SRMS<span>Admin Panel</span></div></div><div class="sidebar-nav"><div class="nav-section-title">Main</div><a class="nav-item" href="admin-dashboard.html"><span class="nav-icon">📊</span>Dashboard</a><a class="nav-item" href="students.html"><span class="nav-icon">👨‍🎓</span>Students</a><a class="nav-item" href="subjects.html"><span class="nav-icon">📚</span>Subjects</a><a class="nav-item" href="marks.html"><span class="nav-icon">✏️</span>Marks</a><div class="nav-section-title">Results</div><a class="nav-item active" href="results.html"><span class="nav-icon">📋</span>Results</a><a class="nav-item" href="rankings.html"><span class="nav-icon">🏆</span>Rankings</a><div class="nav-section-title">System</div><a class="nav-item" href="audit-logs.html"><span class="nav-icon">📝</span>Audit Logs</a></div><div class="sidebar-footer"><div class="user-info"><div class="user-avatar" id="user-avatar">A</div><div class="user-details"><div class="user-name" id="user-name">Admin</div><div class="user-role" id="user-role">Administrator</div></div></div></div></nav>
+
+    <main class="main-content">
+        <header class="content-header"><div class="flex items-center gap-2"><button class="hamburger" id="hamburger">☰</button><h1>Result Management</h1></div><div class="header-actions">
+            <button class="btn btn-success btn-sm" onclick="generateAll()">⚡ Generate All</button>
+            <button class="btn btn-primary btn-sm" onclick="publishResults()">📢 Publish</button>
+            <button class="btn btn-warning btn-sm" onclick="exportExcel()">📊 Export Excel</button>
+            <button class="btn btn-secondary btn-sm" onclick="App.logout()">Logout</button></div></header>
+        <div class="content-body">
+            <div class="table-container"><table class="data-table"><thead><tr><th>Rank</th><th>Student</th><th>Department</th><th>Total</th><th>Percentage</th><th>Grade</th><th>Published</th><th>Actions</th></tr></thead><tbody id="results-table"><tr><td colspan="8" class="text-center" style="padding:2rem;color:var(--text-muted);">Loading...</td></tr></tbody></table></div>
+        </div>
+    </main>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+    (async()=>{
+        const user=await App.requireAuth('ADMIN');if(!user)return;App.initSidebar();App.setupUserInfo(user);await loadResults();
+    })();
+    async function loadResults(){
+        const r=await App.apiCall('GET','/results/rankings');
+        if(r.success){
+            const tbody=document.getElementById('results-table');
+            if(r.data.length===0){tbody.innerHTML='<tr><td colspan="8" class="text-center" style="padding:2rem;"><div class="empty-state"><div class="empty-icon">📋</div><h3>No results generated yet</h3><p>Enter marks first, then generate results.</p></div></td></tr>';return;}
+            tbody.innerHTML=r.data.map(res=>`<tr>
+                <td style="font-weight:800;font-size:1.1rem;">#${res.rankPosition}</td>
+                <td style="font-weight:500;">${App.escapeHtml(res.studentName)}</td>
+                <td><span class="badge badge-blue">${App.escapeHtml(res.department)}</span></td>
+                <td>${res.totalMarks.toFixed(1)}</td>
+                <td style="font-weight:700;">${res.percentage.toFixed(2)}%</td>
+                <td><span class="badge ${App.getGradeClass(res.grade)}" style="font-size:0.9rem;">${res.grade}</span></td>
+                <td>${res.published?'<span class="badge badge-emerald">Yes</span>':'<span class="badge badge-amber">No</span>'}</td>
+                <td><button class="btn btn-secondary btn-sm" onclick="downloadPdf(${res.studentId},'${App.escapeHtml(res.studentName)}')">📄 PDF</button></td>
+            </tr>`).join('');
+        }
+    }
+    async function generateAll(){
+        App.showLoading();
+        const r=await App.apiCall('POST','/results/generate-all');
+        App.hideLoading();
+        if(r.success){App.showToast(r.message,'success');await loadResults();}else App.showToast(r.message,'error');
+    }
+    async function publishResults(){
+        if(!await App.confirm('Publish Results','Publish all results? Students will be notified.'))return;
+        const r=await App.apiCall('POST','/results/publish');
+        if(r.success){App.showToast(r.message,'success');await loadResults();}else App.showToast(r.message,'error');
+    }
+    function exportExcel(){App.downloadFile('/files/results-excel','student_results.xlsx');}
+    function downloadPdf(id,name){App.downloadFile('/files/result-pdf/'+id,'result_'+name.replace(/\s+/g,'_')+'.pdf');}
+</script>
+</body>
+</html>

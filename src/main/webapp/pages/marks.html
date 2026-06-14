@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SRMS | Marks</title><link rel="stylesheet" href="../css/style.css"></head>
+<body>
+<div class="app-layout">
+    <nav class="sidebar" id="sidebar"><div class="sidebar-header"><div class="logo-icon">🎓</div><div class="logo-text">SRMS<span>Admin Panel</span></div></div><div class="sidebar-nav"><div class="nav-section-title">Main</div><a class="nav-item" href="admin-dashboard.html"><span class="nav-icon">📊</span>Dashboard</a><a class="nav-item" href="students.html"><span class="nav-icon">👨‍🎓</span>Students</a><a class="nav-item" href="subjects.html"><span class="nav-icon">📚</span>Subjects</a><a class="nav-item active" href="marks.html"><span class="nav-icon">✏️</span>Marks</a><div class="nav-section-title">Results</div><a class="nav-item" href="results.html"><span class="nav-icon">📋</span>Results</a><a class="nav-item" href="rankings.html"><span class="nav-icon">🏆</span>Rankings</a><div class="nav-section-title">System</div><a class="nav-item" href="audit-logs.html"><span class="nav-icon">📝</span>Audit Logs</a></div><div class="sidebar-footer"><div class="user-info"><div class="user-avatar" id="user-avatar">A</div><div class="user-details"><div class="user-name" id="user-name">Admin</div><div class="user-role" id="user-role">Administrator</div></div></div></div></nav>
+
+    <main class="main-content">
+        <header class="content-header"><div class="flex items-center gap-2"><button class="hamburger" id="hamburger">☰</button><h1>Marks Management</h1></div><div class="header-actions"><button class="btn btn-primary btn-sm" onclick="openAdd()">+ Enter Marks</button><button class="btn btn-secondary btn-sm" onclick="App.logout()">Logout</button></div></header>
+        <div class="content-body">
+            <div class="toolbar">
+                <select class="form-control" id="student-filter" onchange="filterMarks()" style="max-width:300px;"><option value="">All Students</option></select>
+            </div>
+            <div class="table-container"><table class="data-table"><thead><tr><th>ID</th><th>Student</th><th>Subject</th><th>Code</th><th>Marks</th><th>Status</th><th>Actions</th></tr></thead><tbody id="marks-table"><tr><td colspan="7" class="text-center" style="padding:2rem;color:var(--text-muted);">Loading...</td></tr></tbody></table></div>
+        </div>
+    </main>
+</div>
+
+<div class="modal-overlay" id="mark-modal"><div class="modal"><div class="modal-header"><h2 id="modal-title">Enter Marks</h2><button type="button" class="modal-close" onclick="App.closeModal('mark-modal')">✕</button></div><form id="mark-form" onsubmit="event.preventDefault(); save();"><div class="modal-body"><input type="hidden" id="edit-id"><div class="form-group"><label>Student</label><select id="f-student" class="form-control" required></select></div><div class="form-group"><label>Subject</label><select id="f-subject" class="form-control" required></select></div><div class="form-group"><label>Marks (0-100)</label><input type="number" id="f-marks" class="form-control" min="0" max="100" step="0.01" placeholder="Enter marks" required></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="App.closeModal('mark-modal')">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div></form></div></div>
+
+<script src="../js/app.js"></script>
+<script>
+    let allMarks=[], students=[], subjects=[];
+    (async () => {
+        const user = await App.requireAuth('ADMIN'); if(!user)return; App.initSidebar(); App.setupUserInfo(user);
+        const [sr, subr] = await Promise.all([App.apiCall('GET','/students'), App.apiCall('GET','/subjects')]);
+        if(sr.success) { students=sr.data; const sel=document.getElementById('student-filter'); const fSel=document.getElementById('f-student');
+            students.forEach(s=>{sel.innerHTML+=`<option value="${s.studentId}">${App.escapeHtml(s.name)}</option>`; fSel.innerHTML+=`<option value="${s.studentId}">${App.escapeHtml(s.name)}</option>`;});}
+        if(subr.success) { subjects=subr.data; const fSub=document.getElementById('f-subject'); subjects.forEach(s=>{fSub.innerHTML+=`<option value="${s.subjectId}">${App.escapeHtml(s.subjectName)} (${s.subjectCode})</option>`;});}
+        await loadMarks();
+    })();
+    async function loadMarks() {
+        const r=await App.apiCall('GET','/marks'); if(r.success){allMarks=r.data;renderMarks(allMarks);}
+    }
+    function renderMarks(marks) {
+        const tbody=document.getElementById('marks-table');
+        if(marks.length===0){tbody.innerHTML='<tr><td colspan="7" class="text-center" style="padding:2rem;"><div class="empty-state"><div class="empty-icon">✏️</div><h3>No marks entered yet</h3></div></td></tr>';return;}
+        let index = 1;
+        tbody.innerHTML=marks.map(m=>`<tr><td style="font-weight:600;">#${index++}</td><td style="font-weight:500;">${App.escapeHtml(m.studentName)}</td><td>${App.escapeHtml(m.subjectName)}</td><td><span class="badge badge-blue">${App.escapeHtml(m.subjectCode)}</span></td><td style="font-weight:700;">${m.marks.toFixed(2)}</td><td><span class="badge ${m.marks>=60?'badge-emerald':'badge-rose'}">${m.marks>=60?'Pass':'Fail'}</span></td><td><button class="btn btn-secondary btn-sm" onclick="openEdit(${m.markId})">Edit</button> <button class="btn btn-danger btn-sm" onclick="del(${m.markId})">Delete</button></td></tr>`).join('');
+    }
+    async function filterMarks() {
+        const sid=document.getElementById('student-filter').value;
+        if(!sid){renderMarks(allMarks);return;}
+        const r=await App.apiCall('GET','/marks/student/'+sid); if(r.success)renderMarks(r.data);
+    }
+    function openAdd(){document.getElementById('modal-title').textContent='Enter Marks';document.getElementById('mark-form').reset();document.getElementById('edit-id').value='';document.getElementById('f-student').disabled=false;document.getElementById('f-subject').disabled=false;App.openModal('mark-modal');}
+    function openEdit(id){const m=allMarks.find(x=>x.markId===id);if(!m)return;document.getElementById('modal-title').textContent='Update Marks';document.getElementById('edit-id').value=id;document.getElementById('f-student').value=m.studentId;document.getElementById('f-subject').value=m.subjectId;document.getElementById('f-marks').value=m.marks;document.getElementById('f-student').disabled=true;document.getElementById('f-subject').disabled=true;App.openModal('mark-modal');}
+    async function save(){
+        const id=document.getElementById('edit-id').value;
+        if(id){const r=await App.apiCall('PUT','/marks/'+id,{marks:parseFloat(document.getElementById('f-marks').value)});if(r.success){App.showToast(r.message,'success');App.closeModal('mark-modal');await loadMarks();}else App.showToast(r.message,'error');}
+        else{const data={studentId:parseInt(document.getElementById('f-student').value),subjectId:parseInt(document.getElementById('f-subject').value),marks:parseFloat(document.getElementById('f-marks').value)};const r=await App.apiCall('POST','/marks',data);if(r.success){App.showToast(r.message,'success');App.closeModal('mark-modal');await loadMarks();}else App.showToast(r.message,'error');}
+    }
+    async function del(id){if(!await App.confirm('Delete Mark','Delete this mark entry?'))return;const r=await App.apiCall('DELETE','/marks/'+id);if(r.success){App.showToast(r.message,'success');await loadMarks();}else App.showToast(r.message,'error');}
+</script>
+</body>
+</html>

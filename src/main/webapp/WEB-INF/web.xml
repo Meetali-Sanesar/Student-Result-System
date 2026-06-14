@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+                             https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
+         version="5.0">
+
+    <display-name>Student Result Management System</display-name>
+    <description>Enterprise-level Student Result Management System</description>
+
+    <!-- ======================== -->
+    <!--     Welcome Files        -->
+    <!-- ======================== -->
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+    </welcome-file-list>
+
+    <!-- ======================== -->
+    <!--     Session Config       -->
+    <!-- ======================== -->
+    <session-config>
+        <session-timeout>30</session-timeout>
+        <cookie-config>
+            <http-only>true</http-only>
+            <secure>false</secure> <!-- Set to true in production with HTTPS -->
+            <max-age>1800</max-age>
+        </cookie-config>
+        <tracking-mode>COOKIE</tracking-mode>
+    </session-config>
+
+    <!-- ======================== -->
+    <!--     Context Listener     -->
+    <!-- ======================== -->
+    <listener>
+        <listener-class>com.srms.listener.AppContextListener</listener-class>
+    </listener>
+
+    <!-- ======================== -->
+    <!--     Filters              -->
+    <!-- ======================== -->
+
+    <!-- CORS Filter -->
+    <filter>
+        <filter-name>CorsFilter</filter-name>
+        <filter-class>com.srms.filter.CorsFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>CorsFilter</filter-name>
+        <url-pattern>/api/*</url-pattern>
+    </filter-mapping>
+
+    <!-- XSS Protection Filter -->
+    <filter>
+        <filter-name>XssFilter</filter-name>
+        <filter-class>com.srms.filter.XssFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>XssFilter</filter-name>
+        <url-pattern>/api/*</url-pattern>
+    </filter-mapping>
+
+    <!-- Authentication Filter -->
+    <filter>
+        <filter-name>AuthenticationFilter</filter-name>
+        <filter-class>com.srms.filter.AuthenticationFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>AuthenticationFilter</filter-name>
+        <url-pattern>/api/*</url-pattern>
+    </filter-mapping>
+
+    <!-- Authorization Filter -->
+    <filter>
+        <filter-name>AuthorizationFilter</filter-name>
+        <filter-class>com.srms.filter.AuthorizationFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>AuthorizationFilter</filter-name>
+        <url-pattern>/api/*</url-pattern>
+    </filter-mapping>
+
+    <!-- ======================== -->
+    <!--     Servlet Mappings     -->
+    <!-- ======================== -->
+
+    <!-- Auth Controller -->
+    <servlet>
+        <servlet-name>AuthController</servlet-name>
+        <servlet-class>com.srms.controller.AuthController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AuthController</servlet-name>
+        <url-pattern>/api/auth/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Student Controller -->
+    <servlet>
+        <servlet-name>StudentController</servlet-name>
+        <servlet-class>com.srms.controller.StudentController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>StudentController</servlet-name>
+        <url-pattern>/api/students/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Subject Controller -->
+    <servlet>
+        <servlet-name>SubjectController</servlet-name>
+        <servlet-class>com.srms.controller.SubjectController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SubjectController</servlet-name>
+        <url-pattern>/api/subjects/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Mark Controller -->
+    <servlet>
+        <servlet-name>MarkController</servlet-name>
+        <servlet-class>com.srms.controller.MarkController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MarkController</servlet-name>
+        <url-pattern>/api/marks/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Result Controller -->
+    <servlet>
+        <servlet-name>ResultController</servlet-name>
+        <servlet-class>com.srms.controller.ResultController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ResultController</servlet-name>
+        <url-pattern>/api/results/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Dashboard Controller -->
+    <servlet>
+        <servlet-name>DashboardController</servlet-name>
+        <servlet-class>com.srms.controller.DashboardController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>DashboardController</servlet-name>
+        <url-pattern>/api/dashboard/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Notification Controller -->
+    <servlet>
+        <servlet-name>NotificationController</servlet-name>
+        <servlet-class>com.srms.controller.NotificationController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>NotificationController</servlet-name>
+        <url-pattern>/api/notifications/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Audit Log Controller -->
+    <servlet>
+        <servlet-name>AuditLogController</servlet-name>
+        <servlet-class>com.srms.controller.AuditLogController</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>AuditLogController</servlet-name>
+        <url-pattern>/api/audit-logs/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- File Controller -->
+    <servlet>
+        <servlet-name>FileController</servlet-name>
+        <servlet-class>com.srms.controller.FileController</servlet-class>
+        <multipart-config>
+            <max-file-size>5242880</max-file-size>         <!-- 5 MB -->
+            <max-request-size>10485760</max-request-size>  <!-- 10 MB -->
+            <file-size-threshold>1048576</file-size-threshold> <!-- 1 MB -->
+        </multipart-config>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>FileController</servlet-name>
+        <url-pattern>/api/files/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- ======================== -->
+    <!--     Error Pages          -->
+    <!-- ======================== -->
+    <error-page>
+        <error-code>404</error-code>
+        <location>/pages/error-404.html</location>
+    </error-page>
+    <error-page>
+        <error-code>500</error-code>
+        <location>/pages/error-500.html</location>
+    </error-page>
+
+</web-app>

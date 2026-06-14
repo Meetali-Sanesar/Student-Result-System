@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRMS | Admin Dashboard</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon">🎓</div>
+                <div class="logo-text">SRMS<span>Admin Panel</span></div>
+            </div>
+            <div class="sidebar-nav">
+                <div class="nav-section-title">Main</div>
+                <a class="nav-item active" href="admin-dashboard.html"><span class="nav-icon">📊</span>Dashboard</a>
+                <a class="nav-item" href="students.html"><span class="nav-icon">👨‍🎓</span>Students</a>
+                <a class="nav-item" href="subjects.html"><span class="nav-icon">📚</span>Subjects</a>
+                <a class="nav-item" href="marks.html"><span class="nav-icon">✏️</span>Marks</a>
+                <div class="nav-section-title">Results</div>
+                <a class="nav-item" href="results.html"><span class="nav-icon">📋</span>Results</a>
+                <a class="nav-item" href="rankings.html"><span class="nav-icon">🏆</span>Rankings</a>
+                <div class="nav-section-title">System</div>
+                <a class="nav-item" href="audit-logs.html"><span class="nav-icon">📝</span>Audit Logs</a>
+            </div>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar">A</div>
+                    <div class="user-details">
+                        <div class="user-name" id="user-name">Admin</div>
+                        <div class="user-role" id="user-role">Administrator</div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="content-header">
+                <div class="flex items-center gap-2">
+                    <button class="hamburger" id="hamburger">☰</button>
+                    <h1>Dashboard</h1>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="App.logout()">Logout</button>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <!-- Stats Cards -->
+                <div class="stats-grid" id="stats-grid">
+                    <div class="stat-card blue"><div class="stat-icon">👨‍🎓</div><div class="stat-value" id="total-students">-</div><div class="stat-label">Total Students</div></div>
+                    <div class="stat-card emerald"><div class="stat-icon">📚</div><div class="stat-value" id="total-subjects">-</div><div class="stat-label">Total Subjects</div></div>
+                    <div class="stat-card purple"><div class="stat-icon">📋</div><div class="stat-value" id="total-results">-</div><div class="stat-label">Total Results</div></div>
+                    <div class="stat-card amber"><div class="stat-icon">✅</div><div class="stat-value" id="pass-percentage">-</div><div class="stat-label">Pass Percentage</div></div>
+                    <div class="stat-card rose"><div class="stat-icon">❌</div><div class="stat-value" id="failed-count">-</div><div class="stat-label">Failed Students</div></div>
+                </div>
+
+                <!-- Top Student -->
+                <div class="card" style="margin-bottom: 1.5rem;" id="top-student-card">
+                    <div class="card-header"><h2>🌟 Top Performing Student</h2></div>
+                    <div class="card-body" id="top-student-info" style="display: flex; align-items: center; gap: 1.5rem;">
+                        <div style="text-align: center; color: var(--text-muted);">Loading...</div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="charts-grid">
+                    <div class="card">
+                        <div class="card-header"><h2>📊 Grade Distribution</h2></div>
+                        <div class="card-body">
+                            <div id="grade-chart" style="display: flex; align-items: flex-end; gap: 1rem; height: 200px; justify-content: center;"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h2>🏢 Department Statistics</h2></div>
+                        <div class="card-body">
+                            <div id="dept-stats"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Audit Logs -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>📝 Recent Activity</h2>
+                        <a href="audit-logs.html" class="btn btn-secondary btn-sm">View All</a>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead><tr><th>Action</th><th>Details</th><th>Time</th></tr></thead>
+                                <tbody id="recent-logs"><tr><td colspan="3" class="text-center" style="padding:2rem;color:var(--text-muted);">Loading...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        (async () => {
+            const user = await App.requireAuth('ADMIN');
+            if (!user) return;
+            App.initSidebar();
+            App.setupUserInfo(user);
+
+            // Load dashboard stats
+            const statsResult = await App.apiCall('GET', '/dashboard/stats');
+            if (statsResult.success) {
+                const s = statsResult.data;
+                document.getElementById('total-students').textContent = s.totalStudents;
+                document.getElementById('total-subjects').textContent = s.totalSubjects;
+                document.getElementById('total-results').textContent = s.totalResults;
+                document.getElementById('pass-percentage').textContent = s.passPercentage + '%';
+                document.getElementById('failed-count').textContent = s.failedCount;
+
+                // Top Student
+                if (s.topStudent) {
+                    document.getElementById('top-student-info').innerHTML = `
+                        <div class="user-avatar" style="width:56px;height:56px;font-size:1.5rem;background:var(--gradient-amber);color:var(--text-dark);">${s.topStudent.studentName[0]}</div>
+                        <div>
+                            <div style="font-size:1.125rem;font-weight:700;">${App.escapeHtml(s.topStudent.studentName)}</div>
+                            <div style="color:var(--text-secondary);font-size:0.875rem;">${App.escapeHtml(s.topStudent.department)}</div>
+                        </div>
+                        <div style="margin-left:auto;text-align:right;">
+                            <div style="font-size:1.5rem;font-weight:800;color:var(--accent-emerald);">${s.topStudent.percentage}%</div>
+                            <div><span class="badge ${App.getGradeClass(s.topStudent.grade)}">${s.topStudent.grade}</span></div>
+                        </div>`;
+                }
+
+                // Grade Distribution Chart (CSS bars)
+                const grades = s.gradeDistribution || {};
+                const maxVal = Math.max(...Object.values(grades), 1);
+                const colors = { 'A+': 'var(--accent-emerald)', 'A': 'var(--accent-blue)', 'B': 'var(--accent-amber)', 'C': 'var(--accent-purple)', 'F': 'var(--accent-rose)' };
+                let chartHtml = '';
+                for (const [grade, count] of Object.entries(grades)) {
+                    const h = Math.max((count / maxVal) * 160, 8);
+                    chartHtml += `<div style="text-align:center;flex:1;">
+                        <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:4px;">${count}</div>
+                        <div style="height:${h}px;background:${colors[grade]};border-radius:6px 6px 0 0;margin:0 auto;max-width:50px;"></div>
+                        <div style="font-size:0.8rem;font-weight:600;margin-top:8px;">${grade}</div>
+                    </div>`;
+                }
+                document.getElementById('grade-chart').innerHTML = chartHtml;
+
+                // Department Stats
+                const depts = s.departmentStats || {};
+                let deptHtml = '';
+                for (const [dept, info] of Object.entries(depts)) {
+                    deptHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid var(--border-color);">
+                        <span style="font-size:0.875rem;font-weight:500;">${App.escapeHtml(dept)}</span>
+                        <span class="badge badge-blue">${info.studentCount} students</span>
+                    </div>`;
+                }
+                document.getElementById('dept-stats').innerHTML = deptHtml || '<div class="empty-state"><p>No departments found</p></div>';
+            }
+
+            // Recent Audit Logs
+            const logsResult = await App.apiCall('GET', '/audit-logs?limit=5');
+            if (logsResult.success && logsResult.data.length > 0) {
+                const tbody = document.getElementById('recent-logs');
+                tbody.innerHTML = logsResult.data.map(log => `
+                    <tr>
+                        <td><span class="badge badge-blue">${App.escapeHtml(log.action)}</span></td>
+                        <td>${App.escapeHtml(log.details)}</td>
+                        <td style="color:var(--text-muted);font-size:0.8125rem;white-space:nowrap;">${App.formatDate(log.actionTime)}</td>
+                    </tr>`).join('');
+            }
+        })();
+    </script>
+</body>
+</html>

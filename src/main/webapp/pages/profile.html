@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SRMS | Profile</title><link rel="stylesheet" href="../css/style.css"></head>
+<body>
+<div class="app-layout">
+    <nav class="sidebar" id="sidebar"><div class="sidebar-header"><div class="logo-icon">🎓</div><div class="logo-text">SRMS<span>Student Portal</span></div></div><div class="sidebar-nav"><div class="nav-section-title">Menu</div><a class="nav-item" href="student-dashboard.html"><span class="nav-icon">📊</span>Dashboard</a><a class="nav-item active" href="profile.html"><span class="nav-icon">👤</span>Profile</a><a class="nav-item" href="notifications.html"><span class="nav-icon">🔔</span>Notifications</a></div><div class="sidebar-footer"><div class="user-info"><div class="user-avatar" id="user-avatar">S</div><div class="user-details"><div class="user-name" id="user-name">Student</div><div class="user-role" id="user-role">Student</div></div></div></div></nav>
+    <main class="main-content">
+        <header class="content-header"><div class="flex items-center gap-2"><button class="hamburger" id="hamburger">☰</button><h1>👤 My Profile</h1></div><div class="header-actions"><button class="btn btn-secondary btn-sm" onclick="App.logout()">Logout</button></div></header>
+        <div class="content-body">
+            <div class="profile-card">
+                <div class="profile-avatar" id="profile-avatar" style="cursor:pointer;position:relative;" onclick="document.getElementById('image-input').click()">
+                    S
+                    <div style="position:absolute;bottom:4px;right:4px;background:var(--accent-blue);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;">📷</div>
+                </div>
+                <input type="file" id="image-input" accept="image/*" style="display:none" onchange="uploadImage(this)">
+                <div class="profile-info">
+                    <h2 id="p-name">Loading...</h2>
+                    <div class="profile-dept" id="p-dept"></div>
+                    <div class="profile-details">
+                        <div class="profile-detail-item"><div class="detail-label">Email</div><div class="detail-value" id="p-email">-</div></div>
+                        <div class="profile-detail-item"><div class="detail-label">Phone</div><div class="detail-value" id="p-phone">-</div></div>
+                        <div class="profile-detail-item"><div class="detail-label">Student ID</div><div class="detail-value" id="p-id">-</div></div>
+                        <div class="profile-detail-item"><div class="detail-label">Member Since</div><div class="detail-value" id="p-joined">-</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Academic Summary -->
+            <div class="card">
+                <div class="card-header"><h2>📊 Academic Summary</h2></div>
+                <div class="card-body">
+                    <div class="stats-grid" style="margin-bottom:0;">
+                        <div class="stat-card emerald"><div class="stat-icon">📊</div><div class="stat-value" id="a-percentage">-</div><div class="stat-label">Percentage</div></div>
+                        <div class="stat-card blue"><div class="stat-icon">🏅</div><div class="stat-value" id="a-grade">-</div><div class="stat-label">Grade</div></div>
+                        <div class="stat-card amber"><div class="stat-icon">🏆</div><div class="stat-value" id="a-rank">-</div><div class="stat-label">Rank</div></div>
+                        <div class="stat-card purple"><div class="stat-icon">📝</div><div class="stat-value" id="a-total">-</div><div class="stat-label">Total Marks</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="../js/app.js"></script>
+<script>
+    let studentId=null;
+    (async()=>{
+        const user=await App.requireAuth('STUDENT');if(!user)return;App.initSidebar();App.setupUserInfo(user);studentId=user.studentId;
+        const pr=await App.apiCall('GET','/students/'+studentId);
+        if(pr.success){
+            const s=pr.data;
+            document.getElementById('p-name').textContent=s.name;
+            document.getElementById('p-dept').textContent=s.department;
+            document.getElementById('p-email').textContent=s.email;
+            document.getElementById('p-phone').textContent=s.phone||'N/A';
+            document.getElementById('p-id').textContent='#'+s.studentId;
+            document.getElementById('p-joined').textContent=App.formatDate(s.createdAt);
+            if(s.profileImage){document.getElementById('profile-avatar').innerHTML=`<img src="../uploads/${s.profileImage}" alt="Profile"><div style="position:absolute;bottom:4px;right:4px;background:var(--accent-blue);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;">📷</div>`;}
+            else{document.getElementById('profile-avatar').textContent=s.name[0];}
+        }
+        try{const rr=await App.apiCall('GET','/results/'+studentId);if(rr.success){const r=rr.data;document.getElementById('a-percentage').textContent=r.percentage+'%';document.getElementById('a-grade').textContent=r.grade;document.getElementById('a-rank').textContent='#'+r.rankPosition;document.getElementById('a-total').textContent=r.totalMarks.toFixed(1);}}catch(e){}
+    })();
+    async function uploadImage(input){
+        if(!input.files[0])return;
+        const fd=new FormData();fd.append('image',input.files[0]);fd.append('studentId',studentId);
+        App.showLoading();
+        const r=await App.apiUpload('/files/upload-image',fd);
+        App.hideLoading();
+        if(r.success){App.showToast('Profile image updated!','success');setTimeout(()=>location.reload(),800);}
+        else App.showToast(r.message||'Upload failed','error');
+    }
+</script>
+</body>
+</html>

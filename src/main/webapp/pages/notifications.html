@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SRMS | Notifications</title><link rel="stylesheet" href="../css/style.css"></head>
+<body>
+<div class="app-layout">
+    <nav class="sidebar" id="sidebar"><div class="sidebar-header"><div class="logo-icon">🎓</div><div class="logo-text">SRMS<span>Student Portal</span></div></div><div class="sidebar-nav"><div class="nav-section-title">Menu</div><a class="nav-item" href="student-dashboard.html"><span class="nav-icon">📊</span>Dashboard</a><a class="nav-item" href="profile.html"><span class="nav-icon">👤</span>Profile</a><a class="nav-item active" href="notifications.html"><span class="nav-icon">🔔</span>Notifications</a></div><div class="sidebar-footer"><div class="user-info"><div class="user-avatar" id="user-avatar">S</div><div class="user-details"><div class="user-name" id="user-name">Student</div><div class="user-role" id="user-role">Student</div></div></div></div></nav>
+    <main class="main-content">
+        <header class="content-header"><div class="flex items-center gap-2"><button class="hamburger" id="hamburger">☰</button><h1>🔔 Notifications</h1></div><div class="header-actions"><button class="btn btn-secondary btn-sm" onclick="App.logout()">Logout</button></div></header>
+        <div class="content-body"><div class="notification-list" id="notif-list"><div class="spinner"></div></div></div>
+    </main>
+</div>
+<script src="../js/app.js"></script>
+<script>
+    (async()=>{
+        const user=await App.requireAuth('STUDENT');if(!user)return;App.initSidebar();App.setupUserInfo(user);
+        const r=await App.apiCall('GET','/notifications');
+        if(r.success){
+            const list=document.getElementById('notif-list');
+            const notifs=r.data.notifications||[];
+            if(notifs.length===0){list.innerHTML='<div class="empty-state"><div class="empty-icon">🔔</div><h3>No notifications</h3><p>You\'re all caught up!</p></div>';return;}
+            list.innerHTML=notifs.map(n=>`<div class="notification-item ${n.read?'':'unread'}" id="notif-${n.notificationId}">
+                <span style="font-size:1.25rem;">${n.read?'📩':'📬'}</span>
+                <div class="notif-message">${App.escapeHtml(n.message)}</div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                    <span class="notif-time">${App.formatDate(n.createdAt)}</span>
+                    ${n.read?'':'<button class="btn btn-secondary btn-sm" onclick="markRead('+n.notificationId+')">Mark Read</button>'}
+                </div>
+            </div>`).join('');
+        }
+    })();
+    async function markRead(id){
+        const r=await App.apiCall('PUT','/notifications/'+id+'/read');
+        if(r.success){
+            const el=document.getElementById('notif-'+id);
+            if(el){el.classList.remove('unread');el.querySelector('button')?.remove();}
+            App.showToast('Marked as read','success');
+        }
+    }
+</script>
+</body>
+</html>
